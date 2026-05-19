@@ -1,7 +1,10 @@
 name: udp2raw Fully Static Build for ASUS Router (ARM64)
 
 on:
-  workflow_dispatch: # 깃허브 웹 화면에서 클릭 한 번으로 실행할 수 있도록 설정
+  workflow_dispatch: # 깃허브 웹 화면에서 클릭으로 실행
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true' # Node.js 20 지원 중단 경고 해결용 환경 변수
 
 jobs:
   build:
@@ -18,18 +21,17 @@ jobs:
 
       - name: 3. 완전 정적 바이너리 크로스 컴파일 진행
         run: |
-          # udp2raw 소스코드 내 Makefile 변수를 강제 오버라이드하여 컴파일 진행
-          # cc_cross 변수에 aarch64 툴체인을 지정하고, 완벽한 정적 빌드를 위해 -static 및 -O3을 주입합니다.
-          make aarch64 cc_cross=aarch64-linux-gnu-g++ FLAGS="-static -O3"
+          # 존재하지 않는 aarch64 타겟 규칙을 제거하고, 컴파일러와 플래그만 매개변수로 넘겨 기본 빌드를 수행합니다.
+          make cc_cross=aarch64-linux-gnu-g++ FLAGS="-static -O3"
 
       - name: 4. 빌드 결과물 파일명 정렬
         run: |
           mkdir -p output
-          # 빌드된 arm 바이너리를 사용자가 요청한 타겟 명칭으로 안전하게 복사
-          if [ -f "udp2raw_arm" ]; then
-            cp udp2raw_arm output/udp2raw_arm64_asm_aes
+          # 기본 빌드로 생성된 udp2raw 파일을 요청하신 타겟 명칭으로 안전하게 복사합니다.
+          if [ -f "udp2raw" ]; then
+            cp udp2raw output/udp2raw_arm64_asm_aes
           else
-            # 명칭이 다를 경우를 대비한 예외 처리 예비 장치
+            # 만약 파일명이 다르게 생성되었을 경우를 대비한 예비 장치입니다.
             cp udp2raw* output/udp2raw_arm64_asm_aes || cp a.out output/udp2raw_arm64_asm_aes
           fi
 
