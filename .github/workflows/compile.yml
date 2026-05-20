@@ -1,10 +1,10 @@
-name: udp2raw Truly Static Build for ASUS Router (ARM64)
+name: udp2raw Fully Static Build for ASUS Router (ARM64)
 
 on:
   workflow_dispatch: # 깃허브 웹 화면에서 클릭으로 실행
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true' # Node.js 경고 선제 차단
 
 jobs:
   build:
@@ -19,21 +19,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y g++-aarch64-linux-gnu make
 
-      - name: 3. 진짜 완전 정적 바이너리 크로스 컴파일 (변수 교정)
-        run: |
-          # Makefile의 표준 변수인 CXX와 FLAGS 규격을 아수스 musl 커널에 맞게 강제 주입합니다.
-          make generic CXX=aarch64-linux-gnu-g++ CXXFLAGS="-static -O3" LDFLAGS="-static"
-
-      - name: 4. 빌드 결과물 파일명 정렬
+      - name: 3. Makefile 우회 직접 크로스 컴파일 (블랙박스 원천 제거)
         run: |
           mkdir -p output
-          if [ -f "udp2raw" ]; then
-            mv udp2raw output/udp2raw_arm64_asm_aes
-          else
-            mv udp2raw_arm output/udp2raw_arm64_asm_aes || cp a.out output/udp2raw_arm64_asm_aes
-          fi
+          # 5개의 핵심 소스코드를 직접 컴파일러에 입력하여 100% 완전 정적(Static) aarch64 바이너리를 강제 생성합니다.
+          aarch64-linux-gnu-g++ -O3 -w -static src/main.cpp src/encrypt.cpp src/log.cpp src/network.cpp src/common.cpp -o output/udp2raw_arm64_asm_aes -lrt
 
-      - name: 5. 최종 결과물 업로드 (Artifacts)
+      - name: 4. 최종 결과물 업로드 (Artifacts)
         uses: actions/upload-artifact@v4
         with:
           name: udp2raw-Asus-Static-Binary
