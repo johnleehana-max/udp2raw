@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # 깃허브 웹 화면에서 클릭으로 실행
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true' # Node.js 경고 선제 차단
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   build:
@@ -19,13 +19,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y g++-aarch64-linux-gnu make
 
-      - name: 3. Makefile 우회 직접 크로스 컴파일 (블랙박스 원천 제거)
+      - name: 3. [실사] 저장소 루트 디렉토리 파일 구조 확인
+        run: |
+          echo "=== REPOSITORY FILE LIST ==="
+          ls -la
+
+      - name: 4. 경로 교정 및 완전 정적 크로스 컴파일 진행
         run: |
           mkdir -p output
-          # 5개의 핵심 소스코드를 직접 컴파일러에 입력하여 100% 완전 정적(Static) aarch64 바이너리를 강제 생성합니다.
-          aarch64-linux-gnu-g++ -O3 -w -static src/main.cpp src/encrypt.cpp src/log.cpp src/network.cpp src/common.cpp -o output/udp2raw_arm64_asm_aes -lrt
+          # src/ 경로를 제거하고 루트 폴더의 핵심 소스 5개를 직접 지목하여 완전 정적(Static) 바이너리를 생성합니다.
+          aarch64-linux-gnu-g++ -O3 -w -static main.cpp encrypt.cpp log.cpp network.cpp common.cpp -o output/udp2raw_arm64_asm_aes -lrt
 
-      - name: 4. 최종 결과물 업로드 (Artifacts)
+      - name: 5. 최종 결과물 업로드 (Artifacts)
         uses: actions/upload-artifact@v4
         with:
           name: udp2raw-Asus-Static-Binary
